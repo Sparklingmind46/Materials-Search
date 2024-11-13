@@ -4,6 +4,7 @@ from aiogram import Bot, Dispatcher, types, Router
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.storage.memory import MemoryStorage
 from pymongo import MongoClient, errors as PyMongoError
+from aiogram.filters import Command  # Import the Command filter for v3
 
 # Configuration
 API_TOKEN = os.getenv("API_TOKEN")  # Use environment variable for token security
@@ -34,7 +35,7 @@ def get_main_menu():
     return keyboard
 
 # Handler to send welcome image with main menu buttons
-@router.message(commands=['start'])
+@router.message(Command("start"))  # Use Command filter for v3 compatibility
 async def send_welcome_image(message: types.Message):
     await bot.send_photo(
         chat_id=message.chat.id,
