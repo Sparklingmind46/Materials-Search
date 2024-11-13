@@ -79,8 +79,12 @@ def inline_search(query):
 @bot.message_handler(content_types=['document'])
 def handle_document(message):
     try:
+        print(f"Received a document in chat ID: {message.chat.id}")  # Debug: Print chat ID
+        
         # Only process if the message is from the specified file channel
         if message.chat.id == FILE_CHANNEL_ID:
+            print("File is from the correct channel")  # Debug: Confirm it's from the correct channel
+            
             file_id = message.document.file_id
             title = message.document.file_name
             description = message.caption if message.caption else "No description provided."
@@ -89,19 +93,23 @@ def handle_document(message):
             tags = extract_tags_from_filename(title)
 
             # Insert file data into MongoDB with extracted tags
-            collection.insert_one({
+            result = collection.insert_one({
                 "file_id": file_id,
                 "title": title,
                 "description": description,
                 "tags": tags
             })
             
+            print(f"Inserted document ID: {result.inserted_id}")  # Debug: Confirm insertion
+
             # Send confirmation message
             bot.send_message(
                 message.chat.id, 
                 f"✅ File '{title}' has been successfully added to the database with tags: {', '.join(tags)}."
             )
-    
+        else:
+            print("Message not from file channel")  # Debug: Print if it's from another chat
+            
     except Exception as e:
         print(f"Error handling document: {e}")
 
