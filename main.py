@@ -36,6 +36,16 @@ def send_welcome(message):
 # Inline query handler for searching files
 @bot.inline_handler(lambda query: len(query.query) > 0)
 def inline_search(query):
+    bot.answer_inline_query(query.id, [
+        InlineQueryResultArticle(
+            id="test_response",
+            title="Test Response",
+            input_message_content=telebot.types.InputTextMessageContent("Inline handler triggered successfully.")
+        )
+    ], cache_time=0)
+    print("Inline search triggered")
+    return
+def inline_search(query):
     try:
         print("Inline search triggered with query:", query.query)  # Log the search query
         results = []
