@@ -5,7 +5,6 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.storage.memory import MemoryStorage
 from pymongo import MongoClient, errors as PyMongoError
 from aiogram.filters import Command  # Import the Command filter for v3
-from aiogram.filters import ContentTypeFilter
 from aiogram.types import ContentType
 
     
@@ -96,8 +95,9 @@ async def show_category(callback_query: types.CallbackQuery):
 async def back_to_main_menu(callback_query: types.CallbackQuery):
     await bot.send_message(callback_query.from_user.id, "Main Menu:", reply_markup=get_main_menu())
 
-@router.message(ContentTypeFilter(content_types=ContentType.DOCUMENT))
+@router.message()
 async def handle_document(message: types.Message):
+    if message.content_type == ContentType.DOCUMENT:
     # Check if the message is from an authorized admin
     if message.from_user.id not in ADMIN_IDS:
         return
