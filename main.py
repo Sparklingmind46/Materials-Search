@@ -40,17 +40,26 @@ def send_welcome(message):
 @bot.inline_handler(lambda query: len(query.query) > 0)
 def inline_search(query):
     try:
+        print(f"Search query received: {query.query}")  # Debug: Print the search query
         results = []
         search_text = query.query.lower()
-        
+
+    if len(query.query) < 1:
+        bot.answer_inline_query(query.id, [])
+        return
+
         # Search MongoDB for files matching the search term
         matched_files = collection.find({"tags": {"$regex": re.escape(search_text), "$options": "i"}})
         
+        # Debug: Check how many results we have
+        print(f"Found {matched_files.count()} results in MongoDB")  # Debug: Print count of matched files
+        
         # Add each matched file to the results
         for file in matched_files:
+            print(f"Adding file: {file['title']} with tags {file['tags']}")  # Debug: Print file being added
             results.append(
                 InlineQueryResultCachedDocument(
-                    id=file["_id"],
+                    id=str(file["_id"]),
                     title=file["title"],
                     document_file_id=file["file_id"],
                     description=file["description"]
@@ -59,6 +68,7 @@ def inline_search(query):
 
         # If no results are found, send a placeholder message
         if not results:
+            print("No results found!")  # Debug: No results found
             bot.answer_inline_query(query.id, [InlineQueryResultCachedDocument(
                 id="no_result",
                 title="No files found",
@@ -67,7 +77,7 @@ def inline_search(query):
             )], cache_time=0)
         else:
             bot.answer_inline_query(query.id, results)
-            
+         
     except Exception as e:
         print(f"Error in inline search: {e}")
 
@@ -92,9 +102,15 @@ def handle_document(message):
                 "tags": tags
             })
             
-            bot.send_message(message.chat.id, f"File added successfully! Tags: {', '.join(tags)}")
+            # Send confirmation message
+            bot.send_message(
+                message.chat.id, 
+                f"✅ File '{title}' has been successfully added to the database with tags: {', '.join(tags)}."
+            )
+    
     except Exception as e:
         print(f"Error handling document: {e}")
+
 
 # Function to extract tags from the filename
 def extract_tags_from_filename(filename):
