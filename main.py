@@ -98,9 +98,15 @@ async def back_to_main_menu(callback_query: types.CallbackQuery):
 @router.message()
 async def handle_document(message: types.Message):
     if message.content_type == ContentType.DOCUMENT:
-    # Check if the message is from an authorized admin
-    if message.from_user.id not in ADMIN_IDS:
-        return
+        # Add the intended code block here, indented under the if statement
+        if message.from_user.id not in ADMIN_IDS:
+            # Your code for handling unauthorized access
+            await message.reply("You don't have permission to use this command.")
+            return
+        
+        # Add the rest of your document handling code here, also indented
+        # For example:
+        await message.reply("Document received!")
 
     # Document details
     document = message.document
