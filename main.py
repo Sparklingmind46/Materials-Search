@@ -1,13 +1,14 @@
 # study_material_bot.py
+import logging
+import os
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram import Dispatcher
 from aiogram import Bot
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError
-import os
+
 
 API_TOKEN = '7475415260:AAFtcB-4MXtYNqR_y7miGURL-Xb35CCzd7A'
 WELCOME_IMAGE_URL = 'https://envs.sh/wVy.jpg'  # URL for the welcome image
@@ -15,9 +16,10 @@ WELCOME_IMAGE_CAPTION = "Welcome to the Study Material Bot! 📚\nChoose an opti
 
 ADMIN_IDS = [2031106491]  # Replace with actual Telegram user IDs of bot admins
 
+logging.basicConfig(level=logging.INFO)
+
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
-dp.middleware.setup(LoggingMiddleware())
 
 # MongoDB setup
 mongo_client = MongoClient("mongodb+srv://uramit0001:EZ1u5bfKYZ52XeGT@cluster0.qnbzn.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
@@ -147,6 +149,5 @@ async def handle_document(message: types.Message):
 
 # Start the bot
 if __name__ == '__main__':
-    # Start polling
-    dp.run_polling()
+    executor.start_polling(dp, skip_updates=True)
 
