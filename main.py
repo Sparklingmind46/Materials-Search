@@ -37,6 +37,7 @@ def send_welcome(message):
 @bot.inline_handler(lambda query: len(query.query) > 0)
 def inline_search(query):
     try:
+        print("Inline search triggered with query:", query.query)  # Log the search query
         results = []
         search_text = query.query.lower()
 
@@ -47,6 +48,10 @@ def inline_search(query):
                 {"tags": {"$regex": re.escape(search_text), "$options": "i"}}
             ]
         })
+
+        # Log the number of matched files
+        matched_count = matched_files.count()
+        print(f"Number of matched files: {matched_count}")
 
         # Process each matched file and add to results
         for file in matched_files:
@@ -61,15 +66,18 @@ def inline_search(query):
 
         # If no results found, show a placeholder message
         if not results:
-            bot.answer_inline_query(query.id, [
+            print("No results found, sending fallback message.")
+            results.append(
                 InlineQueryResultArticle(
                     id="no_result",
                     title="No files found",
                     input_message_content=telebot.types.InputTextMessageContent("No files matched your search.")
                 )
-            ], cache_time=0)
-        else:
-            bot.answer_inline_query(query.id, results, cache_time=0)
+            )
+        
+        # Send the results or fallback message
+        bot.answer_inline_query(query.id, results, cache_time=0)
+        print("Inline query answered successfully.")
             
     except Exception as e:
         print(f"Error in inline search: {e}")
