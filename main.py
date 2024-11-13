@@ -7,7 +7,7 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # Connect to MongoDB
 client = MongoClient("mongodb+srv://uramit0001:EZ1u5bfKYZ52XeGT@cluster0.qnbzn.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
-db = client["Materials Robot"]
+db = client["materials"]
 collection = db["study_materials"]
 
 # Add your channel ID where the bot will pull materials from
