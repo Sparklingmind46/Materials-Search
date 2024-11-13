@@ -10,9 +10,6 @@ client = MongoClient("mongodb+srv://uramit0001:EZ1u5bfKYZ52XeGT@cluster0.qnbzn.m
 db = client["materials"]
 collection = db["study_materials"]
 
-# Add your channel ID where the bot will pull materials from
-FILE_CHANNEL_ID = -1002400431486  # Replace with your file channel ID
-
 # Set up your bot
 bot = telebot.TeleBot("7475415260:AAFtcB-4MXtYNqR_y7miGURL-Xb35CCzd7A")
 
@@ -75,44 +72,41 @@ def inline_search(query):
     except Exception as e:
         print(f"Error in inline search: {e}")
 
-# Message handler for receiving files from anyone in the file channel
+# Define a list of admin user IDs who are allowed to send files to the bot
+ADMIN_IDS = [2031106491]  # Replace with actual admin user IDs
+
 @bot.message_handler(content_types=['document'])
 def handle_document(message):
     try:
-        print(f"Received a document in chat ID: {message.chat.id}")  # Debug: Print chat ID
+        # Check if the sender's user ID is in the list of admins
+        if message.from_user.id not in ADMIN_IDS:
+            bot.send_message(message.chat.id, "❌ You do not have permission to upload files.")
+            return
+
+        # Process the document if the sender is an admin
+        file_id = message.document.file_id
+        title = message.document.file_name
+        description = message.caption if message.caption else "No description provided."
         
-        # Only process if the message is from the specified file channel
-        if message.chat.id == FILE_CHANNEL_ID:
-            print("File is from the correct channel")  # Debug: Confirm it's from the correct channel
-            
-            file_id = message.document.file_id
-            title = message.document.file_name
-            description = message.caption if message.caption else "No description provided."
-            
-            # Extract tags from the filename
-            tags = extract_tags_from_filename(title)
+        # Extract tags from the filename
+        tags = extract_tags_from_filename(title)
 
-            # Insert file data into MongoDB with extracted tags
-            result = collection.insert_one({
-                "file_id": file_id,
-                "title": title,
-                "description": description,
-                "tags": tags
-            })
-            
-            print(f"Inserted document ID: {result.inserted_id}")  # Debug: Confirm insertion
-
-            # Send confirmation message
-            bot.send_message(
-                message.chat.id, 
-                f"✅ File '{title}' has been successfully added to the database with tags: {', '.join(tags)}."
-            )
-        else:
-            print("Message not from file channel")  # Debug: Print if it's from another chat
-            
+        # Insert file data into MongoDB with extracted tags
+        result = collection.insert_one({
+            "file_id": file_id,
+            "title": title,
+            "description": description,
+            "tags": tags
+        })
+        
+        # Send confirmation message
+        bot.send_message(
+            message.chat.id, 
+            f"✅ File '{title}' has been successfully added to the database with tags: {', '.join(tags)}."
+        )
+    
     except Exception as e:
         print(f"Error handling document: {e}")
-
 
 # Function to extract tags from the filename
 def extract_tags_from_filename(filename):
