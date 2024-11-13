@@ -37,37 +37,39 @@ def send_welcome(message):
 @bot.inline_handler(lambda query: len(query.query) > 0)
 def inline_search(query):
     try:
-        if len(query.query) < 1:
-            bot.answer_inline_query(query.id, [])
-            return
-        
         results = []
         search_text = query.query.lower()
 
-        # Search MongoDB for files matching the search term
-        matched_files = collection.find({"tags": {"$regex": re.escape(search_text), "$options": "i"}})
-        
-        # Add each matched file to the results
+        # Search MongoDB for files matching the search term in title or tags
+        matched_files = collection.find({
+            "$or": [
+                {"title": {"$regex": re.escape(search_text), "$options": "i"}},
+                {"tags": {"$regex": re.escape(search_text), "$options": "i"}}
+            ]
+        })
+
+        # Process each matched file and add to results
         for file in matched_files:
             results.append(
                 InlineQueryResultCachedDocument(
-                    id=str(file["_id"]),
+                    id=str(file["_id"]),  # Convert MongoDB _id to string for inline query result ID
                     title=file["title"],
                     document_file_id=file["file_id"],
-                    description=file["description"]
+                    description=file.get("description", "No description available.")
                 )
             )
 
-        # If no results are found, send a placeholder message
+        # If no results found, show a placeholder message
         if not results:
-            bot.answer_inline_query(query.id, [InlineQueryResultCachedDocument(
-                id="no_result",
-                title="No files found",
-                document_file_id="placeholder_file_id",
-                description="Try a different search term or check your spelling."
-            )], cache_time=0)
+            bot.answer_inline_query(query.id, [
+                InlineQueryResultArticle(
+                    id="no_result",
+                    title="No files found",
+                    input_message_content=telebot.types.InputTextMessageContent("No files matched your search.")
+                )
+            ], cache_time=0)
         else:
-            bot.answer_inline_query(query.id, results)
+            bot.answer_inline_query(query.id, results, cache_time=0)
             
     except Exception as e:
         print(f"Error in inline search: {e}")
