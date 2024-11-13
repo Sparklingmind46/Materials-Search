@@ -19,7 +19,7 @@ ADMIN_IDS = [2031106491]  # Replace with actual Telegram user IDs of bot admins
 logging.basicConfig(level=logging.INFO)
 
 bot = Bot(token=API_TOKEN)
-dp = Dispatcher(bot)
+dp = Dispatcher()
 
 # MongoDB setup
 mongo_client = MongoClient("mongodb+srv://uramit0001:EZ1u5bfKYZ52XeGT@cluster0.qnbzn.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
@@ -149,5 +149,5 @@ async def handle_document(message: types.Message):
 
 # Start the bot
 if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
+    dp.start_polling(bot)
 
