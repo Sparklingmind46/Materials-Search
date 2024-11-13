@@ -6,7 +6,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from pymongo import MongoClient, errors as PyMongoError
 from aiogram.filters import Command  # Import the Command filter for v3
 from aiogram.types import ContentType
-
+import asyncio
     
 # Configuration
 API_TOKEN = os.getenv("API_TOKEN")  # Use environment variable for token security
@@ -135,6 +135,8 @@ async def handle_document(message: types.Message):
         await message.reply("Failed to add the file to the database.")
         print(f"Error inserting into MongoDB: {e}")
 
-# Start the bot
-if __name__ == '__main__':
-    dp.start_polling(bot)
+async def main():
+    await dp.start_polling(bot)
+
+if __name__ == "__main__":
+    asyncio.run(main())
