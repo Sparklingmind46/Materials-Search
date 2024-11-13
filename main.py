@@ -5,7 +5,10 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.storage.memory import MemoryStorage
 from pymongo import MongoClient, errors as PyMongoError
 from aiogram.filters import Command  # Import the Command filter for v3
+from aiogram.filters import ContentTypeFilter
+from aiogram.types import ContentType
 
+    
 # Configuration
 API_TOKEN = os.getenv("API_TOKEN")  # Use environment variable for token security
 WELCOME_IMAGE_URL = 'https://envs.sh/wVy.jpg'
@@ -93,8 +96,7 @@ async def show_category(callback_query: types.CallbackQuery):
 async def back_to_main_menu(callback_query: types.CallbackQuery):
     await bot.send_message(callback_query.from_user.id, "Main Menu:", reply_markup=get_main_menu())
 
-# Command to add a new file with advanced attributes (subject, grade level, tags)
-@router.message(content_types=types.ContentType.DOCUMENT)
+@router.message(ContentTypeFilter(content_types=ContentType.DOCUMENT))
 async def handle_document(message: types.Message):
     # Check if the message is from an authorized admin
     if message.from_user.id not in ADMIN_IDS:
