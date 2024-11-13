@@ -1,142 +1,109 @@
-import logging
-import os
-from aiogram import Bot, Dispatcher, types, Router
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.fsm.storage.memory import MemoryStorage
-from pymongo import MongoClient, errors as PyMongoError
-from aiogram.filters import Command  # Import the Command filter for v3
-from aiogram.types import ContentType
-import asyncio
-    
-# Configuration
-API_TOKEN = os.getenv("API_TOKEN")  # Use environment variable for token security
-WELCOME_IMAGE_URL = 'https://envs.sh/wVy.jpg'
-WELCOME_IMAGE_CAPTION = "Welcome to the Study Material Bot! 📚\nChoose an option below to get started.\nPowered by- @Team_SAT_25"
-ADMIN_IDS = [2031106491]  # Replace with actual Telegram user IDs of bot admins
+import telebot
+from telebot.types import InlineQueryResultCachedDocument
+from pymongo import MongoClient
+import re
+import telebot
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
+# Connect to MongoDB
+client = MongoClient("your_mongo_db_connection_string")
+db = client["your_database_name"]
+collection = db["study_materials"]
 
-# Set up Bot, Dispatcher, and Router
-bot = Bot(token=API_TOKEN)
-dp = Dispatcher()
-router = Router()  # Router instance to manage handlers
-dp.include_router(router)  # Include router in dispatcher
+# Add your channel ID where the bot will pull materials from
+FILE_CHANNEL_ID = -1002400431486  # Replace with your file channel ID
 
-# MongoDB setup
-mongo_client = MongoClient("mongodb+srv://uramit0001:EZ1u5bfKYZ52XeGT@cluster0.qnbzn.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
-db = mongo_client['study_bot_db']
-materials_collection = db['materials']
+# Set up your bot
+bot = telebot.TeleBot("7475415260:AAFtcB-4MXtYNqR_y7miGURL-Xb35CCzd7A")
 
-# Helper function to create the main menu keyboard
-def get_main_menu():
-    keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton("📂 Browse Materials", callback_data="browse_materials"))
-    keyboard.add(InlineKeyboardButton("❓ Help", callback_data="help"))
-    keyboard.add(InlineKeyboardButton("🌐 Updates channel", url="https://t.me/team_sat_25"))
-    return keyboard
-
-# Handler to send welcome image with main menu buttons
-@router.message(Command("start"))  # Use Command filter for v3 compatibility
-async def send_welcome_image(message: types.Message):
-    await bot.send_photo(
-        chat_id=message.chat.id,
-        photo=WELCOME_IMAGE_URL,
-        caption=WELCOME_IMAGE_CAPTION,
-        reply_markup=get_main_menu()
-    )
-
-# Handler for button clicks in main menu
-@router.callback_query(lambda c: c.data in ['browse_materials', 'help'])
-async def process_main_menu(callback_query: types.CallbackQuery):
-    action = callback_query.data
-
-    if action == "browse_materials":
-        # Show categories (e.g., subjects or grade levels)
-        keyboard = InlineKeyboardMarkup()
-        keyboard.add(InlineKeyboardButton("📖 Mathematics", callback_data="category_math"))
-        keyboard.add(InlineKeyboardButton("🔬 Science", callback_data="category_science"))
-        keyboard.add(InlineKeyboardButton("🔤 Language Arts", callback_data="category_language"))
-        keyboard.add(InlineKeyboardButton("⬅️ Back to Main Menu", callback_data="back_to_main"))
-        await bot.send_message(callback_query.from_user.id, "Select a category:", reply_markup=keyboard)
-
-    elif action == "help":
-        help_text = ("Welcome to the Study Material Bot!\n\n"
-                     "Here's how to use this bot:\n"
-                     "- Use inline mode to search materials quickly.\n"
-                     "- Click 'Browse Materials' to see available categories.\n"
-                     "- For further questions, reach out to the admin.\n")
-        await bot.send_message(callback_query.from_user.id, help_text, reply_markup=get_main_menu())
-
-# Handler for category selection
-@router.callback_query(lambda c: c.data.startswith("category_"))
-async def show_category(callback_query: types.CallbackQuery):
-    category = callback_query.data.split("_")[1]
-
-    # MongoDB search for materials in the selected category
-    search_filter = {"subject": category.capitalize()}
-    materials = materials_collection.find(search_filter)
-
-    if materials.count() == 0:
-        await bot.send_message(callback_query.from_user.id, f"No materials found for {category}.", reply_markup=get_main_menu())
-        return
-
-    for material in materials:
-        await bot.send_document(
-            callback_query.from_user.id,
-            material['file_id'],
-            caption=f"{material['title']}\n{material.get('description', '')}"
-        )
-    
-    await bot.send_message(callback_query.from_user.id, "⬅️ Back to Main Menu", reply_markup=get_main_menu())
-
-# Handler for returning to the main menu
-@router.callback_query(lambda c: c.data == "back_to_main")
-async def back_to_main_menu(callback_query: types.CallbackQuery):
-    await bot.send_message(callback_query.from_user.id, "Main Menu:", reply_markup=get_main_menu())
-
-@router.message()
-async def handle_document(message: types.Message):
-    if message.content_type == ContentType.DOCUMENT:
-        # Add the intended code block here, indented under the if statement
-        if message.from_user.id not in ADMIN_IDS:
-            # Your code for handling unauthorized access
-            await message.reply("You don't have permission to use this command.")
-            return
-        
-        # Add the rest of your document handling code here, also indented
-        # For example:
-        await message.reply("Document received!")
-
-    # Document details
-    document = message.document
-    file_id = document.file_id
-    title = document.file_name
-
-    # Extract additional details from command arguments
-    args = message.caption.split('|') if message.caption else []
-    tags = args[0].strip() if len(args) > 0 else ""
-    subject = args[1].strip() if len(args) > 1 else "General"
-    grade_level = args[2].strip() if len(args) > 2 else "All Levels"
-
+# Handler for the /start command
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
     try:
-        # Insert document data into MongoDB
-        materials_collection.insert_one({
-            "file_id": file_id,
-            "title": title,
-            "tags": tags.lower(),
-            "subject": subject,
-            "grade_level": grade_level,
-            "description": f"Study material for {subject}, suitable for {grade_level}."
-        })
-        await message.reply(f"File '{title}' added successfully with subject '{subject}' and grade level '{grade_level}'.")
+        # Prepare the inline keyboard with buttons
+        keyboard = InlineKeyboardMarkup()
+        button1 = InlineKeyboardButton(text="Updates Channel", url="https://t.me/team_sat_25")  # Replace with your channel link
+        button2 = InlineKeyboardButton(text="Developer", url="https://t.me/ur_amit_01")  # Replace with your Telegram ID
+        keyboard.add(button1, button2)
+
+        # Send an image with a caption and the inline buttons
+        image_url = "https://envs.sh/wVy.jpg"  # URL or local path of the image
+        caption = "Welcome to the Study Material search Bot! Powered by - @Team_SAT_25"
+        
+        # Send the image with caption and buttons
+        bot.send_photo(message.chat.id, image_url, caption=caption, reply_markup=keyboard)
     
-    except PyMongoError as e:
-        await message.reply("Failed to add the file to the database.")
-        print(f"Error inserting into MongoDB: {e}")
+    except Exception as e:
+        print(f"Error sending start message: {e}")
 
-async def main():
-    await dp.start_polling(bot)
+# Inline query handler for searching files
+@bot.inline_handler(lambda query: len(query.query) > 0)
+def inline_search(query):
+    try:
+        results = []
+        search_text = query.query.lower()
+        
+        # Search MongoDB for files matching the search term
+        matched_files = collection.find({"tags": {"$regex": re.escape(search_text), "$options": "i"}})
+        
+        # Add each matched file to the results
+        for file in matched_files:
+            results.append(
+                InlineQueryResultCachedDocument(
+                    id=file["_id"],
+                    title=file["title"],
+                    document_file_id=file["file_id"],
+                    description=file["description"]
+                )
+            )
 
-if __name__ == "__main__":
-    asyncio.run(main())
+        # If no results are found, send a placeholder message
+        if not results:
+            bot.answer_inline_query(query.id, [InlineQueryResultCachedDocument(
+                id="no_result",
+                title="No files found",
+                document_file_id="placeholder_file_id",
+                description="Try a different search term or check your spelling."
+            )], cache_time=0)
+        else:
+            bot.answer_inline_query(query.id, results)
+            
+    except Exception as e:
+        print(f"Error in inline search: {e}")
+
+# Message handler for receiving files from anyone in the file channel
+@bot.message_handler(content_types=['document'])
+def handle_document(message):
+    try:
+        # Only process if the message is from the specified file channel
+        if message.chat.id == FILE_CHANNEL_ID:
+            file_id = message.document.file_id
+            title = message.document.file_name
+            description = message.caption if message.caption else "No description provided."
+            
+            # Extract tags from the filename
+            tags = extract_tags_from_filename(title)
+
+            # Insert file data into MongoDB with extracted tags
+            collection.insert_one({
+                "file_id": file_id,
+                "title": title,
+                "description": description,
+                "tags": tags
+            })
+            
+            bot.send_message(message.chat.id, f"File added successfully! Tags: {', '.join(tags)}")
+    except Exception as e:
+        print(f"Error handling document: {e}")
+
+# Function to extract tags from the filename
+def extract_tags_from_filename(filename):
+    # Example: Split the filename by spaces, underscores, or dashes and filter out common words
+    tags = re.findall(r'\b\w+\b', filename.lower())
+    # Optional: Exclude common stop words (you can customize this list)
+    stop_words = {"the", "and", "or", "for", "with", "a", "an", "by", "on"}
+    tags = [tag for tag in tags if tag not in stop_words]
+    return tags
+
+# Polling to keep the bot running
+bot.polling()
