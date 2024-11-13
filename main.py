@@ -3,7 +3,6 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram import Dispatcher
 from aiogram import Bot
-from aiogram.types import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from pymongo import MongoClient
