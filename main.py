@@ -21,7 +21,7 @@ router = Router()  # Router instance to manage handlers
 dp.include_router(router)  # Include router in dispatcher
 
 # MongoDB setup
-mongo_client = MongoClient("your-mongodb-connection-string")
+mongo_client = MongoClient("mongodb+srv://uramit0001:EZ1u5bfKYZ52XeGT@cluster0.qnbzn.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
 db = mongo_client['study_bot_db']
 materials_collection = db['materials']
 
@@ -30,7 +30,7 @@ def get_main_menu():
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton("📂 Browse Materials", callback_data="browse_materials"))
     keyboard.add(InlineKeyboardButton("❓ Help", callback_data="help"))
-    keyboard.add(InlineKeyboardButton("📞 Updates channel", url="https://t.me/team_sat_25"))
+    keyboard.add(InlineKeyboardButton("🌐 Updates channel", url="https://t.me/team_sat_25"))
     return keyboard
 
 # Handler to send welcome image with main menu buttons
