@@ -36,47 +36,35 @@ def send_welcome(message):
 # Inline query handler for searching files
 @bot.inline_handler(lambda query: len(query.query) > 0)
 def inline_search(query):
-    bot.answer_inline_query(query.id, [
-        InlineQueryResultArticle(
-            id="test_response",
-            title="Test Response",
-            input_message_content=telebot.types.InputTextMessageContent("Inline handler triggered successfully.")
-        )
-    ], cache_time=0)
-    print("Inline search triggered")
-    return
-def inline_search(query):
     try:
-        print("Inline search triggered with query:", query.query)  # Log the search query
-        results = []
         search_text = query.query.lower()
+        print(f"Inline search triggered with query: {search_text}")
 
         # Search MongoDB for files matching the search term in title or tags
-        matched_files = collection.find({
+        matched_files = list(collection.find({
             "$or": [
                 {"title": {"$regex": re.escape(search_text), "$options": "i"}},
                 {"tags": {"$regex": re.escape(search_text), "$options": "i"}}
             ]
-        })
+        }))
 
-        # Log the number of matched files
-        matched_count = matched_files.count()
-        print(f"Number of matched files: {matched_count}")
+        # Log matched files count
+        print(f"Matched files count: {len(matched_files)}")
 
-        # Process each matched file and add to results
+        results = []
         for file in matched_files:
             results.append(
                 InlineQueryResultCachedDocument(
-                    id=str(file["_id"]),  # Convert MongoDB _id to string for inline query result ID
+                    id=str(file["_id"]),
                     title=file["title"],
                     document_file_id=file["file_id"],
                     description=file.get("description", "No description available.")
                 )
             )
 
-        # If no results found, show a placeholder message
         if not results:
-            print("No results found, sending fallback message.")
+            # No files matched, send a fallback response
+            print("No files matched.")
             results.append(
                 InlineQueryResultArticle(
                     id="no_result",
@@ -84,13 +72,25 @@ def inline_search(query):
                     input_message_content=telebot.types.InputTextMessageContent("No files matched your search.")
                 )
             )
-        
-        # Send the results or fallback message
+            
         bot.answer_inline_query(query.id, results, cache_time=0)
         print("Inline query answered successfully.")
-            
+        
     except Exception as e:
         print(f"Error in inline search: {e}")
+
+@bot.message_handler(commands=['list_data'])
+def list_data(message):
+    try:
+        documents = list(collection.find({}))
+        if documents:
+            for doc in documents:
+                bot.send_message(message.chat.id, f"Title: {doc.get('title')}, Tags: {doc.get('tags')}")
+        else:
+            bot.send_message(message.chat.id, "No documents in the database.")
+    except Exception as e:
+        bot.send_message(message.chat.id, f"Error fetching data: {e}")
+
 
 # Define a list of admin user IDs who are allowed to send files to the bot
 ADMIN_IDS = [2031106491]  # Replace with actual admin user IDs
