@@ -38,7 +38,7 @@ def send_welcome(message):
 def inline_search(query):
     try:
         search_text = query.query.lower()
-        print(f"Inline search triggered with query: {search_text}")
+        print(f"Inline search triggered with query: {search_text}")  # Add a print statement for debugging
 
         # Search MongoDB for files matching the search term in title or tags
         matched_files = list(collection.find({
@@ -47,9 +47,8 @@ def inline_search(query):
                 {"tags": {"$regex": re.escape(search_text), "$options": "i"}}
             ]
         }))
-
-        # Log matched files count
-        print(f"Matched files count: {len(matched_files)}")
+        
+        print(f"Matched files: {matched_files}")  # Print the matched files for debugging
 
         results = []
         for file in matched_files:
@@ -63,13 +62,13 @@ def inline_search(query):
             )
 
         if not results:
-            # No files matched, send a fallback response
-            print("No files matched.")
+            print("No files matched.")  # Log no results case
             results.append(
-                InlineQueryResultArticle(
-                    id="no_result",
+                InlineQueryResultCachedDocument(
+                    id="no_result",  # Ensure unique ID
                     title="No files found",
-                    input_message_content=telebot.types.InputTextMessageContent("No files matched your search.")
+                    document_file_id="your_placeholder_file_id",  # Placeholder file ID
+                    description="Try a different search term or check your spelling."
                 )
             )
             
@@ -78,6 +77,7 @@ def inline_search(query):
         
     except Exception as e:
         print(f"Error in inline search: {e}")
+
 
 @bot.message_handler(commands=['list_data'])
 def list_data(message):
